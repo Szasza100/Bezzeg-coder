@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kódoló / Dekódoló - Bezzeg Stúdió</title>
+    <title>Kódoló / Dekódoló és Leltár - Bezzeg Stúdió</title>
     <!-- Külső könyvtárak -->
     <script src="https://unpkg.com/easyqrcodejs@4.5.0/dist/easy.qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
@@ -16,7 +16,7 @@
         :root {
             --panel-bg: #1e1e1e;
             --text-color: #e0e0e0;
-            --accent: #2196F3; 
+            --accent: #00BCD4; /* Türkizkék alap */
         }
         
         body {
@@ -50,7 +50,6 @@
             height: 40px;
             aspect-ratio: 340 / 281;
             object-fit: contain;
-            /* Szögletes dizájn, nincs border-radius */
         }
         
         header h2 { margin: 0; color: #fff; font-size: 22px; letter-spacing: 1px; }
@@ -69,8 +68,8 @@
             padding: 15px; text-align: center; font-size: 14px; z-index: 100;
             position: relative; margin-top: auto;
         }
-        footer a { color: #2196F3; text-decoration: underline; cursor: pointer; margin-left: 10px; }
-        footer a:hover { color: #64B5F6; }
+        footer a { color: var(--accent); text-decoration: underline; cursor: pointer; margin-left: 10px; }
+        footer a:hover { filter: brightness(1.2); }
 
         .bg-layer {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -79,11 +78,27 @@
             transition: opacity 2s ease-in-out; opacity: 0;
         }
 
+        /* --- Fülek (Tabs) --- */
+        .tab-container {
+            margin-top: 80px;
+            display: flex; gap: 10px; width: 90%; max-width: 700px; z-index: 2;
+        }
+        .tab-btn {
+            flex: 1; padding: 12px; font-size: 16px; font-weight: bold;
+            background: #222; color: #888; border: 1px solid #333; border-bottom: none;
+            border-radius: 10px 10px 0 0; cursor: pointer; transition: 0.3s;
+        }
+        .tab-btn.active {
+            background: var(--panel-bg); color: var(--accent);
+            border-color: var(--accent); border-bottom: 1px solid var(--panel-bg);
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.5);
+        }
+
         .container {
             background: var(--panel-bg); padding: 30px;
-            border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.9);
-            max-width: 700px; width: 90%; border: 1px solid #333; z-index: 1;
-            position: relative; margin-top: 90px; margin-bottom: 40px;
+            border-radius: 0 0 12px 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+            max-width: 700px; width: 90%; border: 1px solid #333; border-top: 1px solid var(--accent);
+            z-index: 1; position: relative; margin-bottom: 40px;
         }
 
         .panel-header-row {
@@ -101,7 +116,7 @@
         }
         .modal-content {
             background: #222; padding: 25px; border-radius: 12px; border: 1px solid #555;
-            width: 90%; max-width: 500px; box-shadow: 0 5px 25px rgba(0,0,0,0.8);
+            width: 90%; max-width: 500px; box-shadow: 0 5px 25px rgba(0,0,0,0.8); position: relative;
         }
         .modal-content h3 { margin-top: 0; color: var(--accent); text-align: center; transition: color 0.5s; border-bottom: 1px solid #444; padding-bottom: 10px;}
         .modal-content button { margin-top: 15px; }
@@ -116,7 +131,7 @@
         #clearBtn:hover { transform: scale(1.2); }
 
         label { display: block; margin: 15px 0 5px; font-weight: bold; }
-        textarea, select, input[type="file"], input[type="number"] {
+        textarea, select, input[type="text"], input[type="file"], input[type="number"] {
             width: 100%; padding: 12px; border-radius: 6px;
             border: 1px solid #444; background: #111; color: #00ffcc;
             box-sizing: border-box; font-family: 'Courier New', Courier, monospace;
@@ -131,9 +146,12 @@
             cursor: pointer; transition: background-color 0.5s, filter 0.3s; margin-top: 10px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
-        .main-btn:hover { filter: brightness(1.2); }
+        .main-btn:hover:not(:disabled) { filter: brightness(1.2); }
+        .main-btn:disabled { background-color: #555; cursor: not-allowed; color: #888; text-shadow: none; }
         .danger-btn { background-color: #f44336 !important; }
         .danger-btn:hover { background-color: #d32f2f !important; }
+        .success-btn { background-color: #4CAF50 !important; }
+        .success-btn:hover { background-color: #388E3C !important; }
         .flex-btn-row { display: flex; gap: 10px; }
         
         .output-container {
@@ -158,12 +176,12 @@
         .hidden { display: none !important; }
 
         /* Kamera UI */
-        #reader { 
+        #reader, .scanner-box { 
             width: 100%; min-height: 250px; margin-top: 15px; 
             border-radius: 8px; overflow: hidden; border: 2px solid var(--accent); 
             background: #000; position: relative; cursor: crosshair; transition: border-color 0.5s;
         }
-        #reader video { width: 100% !important; height: auto !important; object-fit: cover; }
+        video { width: 100% !important; height: auto !important; object-fit: cover; }
 
         @keyframes focusAnim {
             0% { transform: scale(1.5); opacity: 0; }
@@ -177,13 +195,13 @@
             animation: focusAnim 0.6s ease-out forwards;
         }
 
-        #stopCameraBtn {
+        .stop-cam-btn {
             background-color: #ff3333; color: white; border: 3px solid #fff;
             border-radius: 30px; padding: 10px 20px; font-size: 18px; font-weight: bold;
             cursor: pointer; box-shadow: 0 4px 15px rgba(255, 0, 0, 0.5);
             transition: transform 0.3s, background-color 0.3s; margin-top: 15px;
         }
-        #stopCameraBtn:hover { transform: scale(1.05); background-color: #ff0000; }
+        .stop-cam-btn:hover { transform: scale(1.05); background-color: #ff0000; }
         
         #snapshotImg {
             width: 100%; border: 2px solid var(--accent);
@@ -191,15 +209,45 @@
         }
 
         /* Jogi szöveg stílus */
-        .legal-text p { font-size: 14px; line-height: 1.6; color: #ccc; text-align: justify;}
-        .legal-text h4 { color: #fff; margin-bottom: 5px; }
+        .legal-text-box { max-height: 250px; overflow-y: auto; padding: 10px; background: #111; border: 1px solid #444; border-radius: 6px; margin-bottom: 15px; }
+        .legal-text-box p { font-size: 14px; line-height: 1.6; color: #ccc; text-align: justify; margin-top: 0;}
+        .legal-text-box h4 { color: #fff; margin-bottom: 5px; margin-top: 15px; }
+        .tos-checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 16px; color: #fff; }
+        .tos-checkbox-label input { width: 20px; height: 20px; cursor: pointer; }
+        
+        #tosCloseX {
+            position: absolute; top: 15px; right: 20px; color: #ff4444; font-size: 24px; cursor: pointer; font-weight: bold; display: none;
+        }
+        #tosCloseX:hover { transform: scale(1.2); }
+
+        /* --- Leltár (Inventory) Stílusok --- */
+        .inventory-header { display: flex; justify-content: space-between; align-items: center; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px;}
+        .inventory-title { margin: 0; font-size: 20px; color: var(--accent); }
+        .inventory-id { font-size: 14px; color: #777; font-family: monospace; margin-left: 10px; }
+        .inventory-loc { font-size: 12px; color: #aaa; display: block; margin-top: 5px; }
+        .readonly-badge { background: #f44336; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-left: 5px;}
+        
+        .stars { color: #555; font-size: 24px; cursor: pointer; }
+        .stars span:hover, .stars span.active { color: #FFD700; }
+
+        .list-item { display: flex; justify-content: space-between; align-items: center; background: #1a1a1a; padding: 12px; border-radius: 6px; border-left: 4px solid var(--accent); margin-bottom: 10px; }
+        .list-item-info strong { display: block; font-size: 16px; color: #fff; }
+        .list-item-info small { color: #aaa; font-size: 12px; }
+        .list-item-id { font-family: monospace; color: #00ffcc; margin-right: 15px; font-size: 12px; }
+        .del-item-btn { background: none; border: none; color: #f44336; font-size: 20px; cursor: pointer; }
+        .del-item-btn:hover { transform: scale(1.2); }
+        
+        .inventory-controls { display: flex; gap: 10px; margin-bottom: 20px; }
+        .smart-scan-result { font-size: 24px; color: var(--accent); font-weight: bold; text-align: center; margin: 20px 0; }
+        .smart-scan-desc { font-size: 18px; color: #fff; text-align: center; }
+
     </style>
 </head>
 <body>
 
 <header>
     <div class="header-left">
-        <img src="icons/logo.png" alt="Bezzeg Stúdió Logó" class="header-logo">
+        <img src="icons/logo.png" alt="Bezzeg Stúdió Logó" class="header-logo" onerror="this.style.display='none'">
         <h2>Bezzeg Stúdió</h2>
     </div>
     <button id="settingsBtn" onclick="document.getElementById('settingsModal').style.display='flex'" title="Beállítások">⚙️</button>
@@ -207,6 +255,145 @@
 
 <div id="bg-layer-1" class="bg-layer"></div>
 <div id="bg-layer-2" class="bg-layer"></div>
+
+<div class="tab-container">
+    <button id="tabBtnEncode" class="tab-btn active" onclick="switchTab('encode')">Kódoló / Dekódoló</button>
+    <button id="tabBtnInventory" class="tab-btn" onclick="switchTab('inventory')">Listák / Leltár</button>
+</div>
+
+<!-- ============================================== -->
+<!-- 1. KÓDOLÓ / DEKÓDOLÓ FÜL                       -->
+<!-- ============================================== -->
+<div class="container" id="encodeView">
+    <div class="panel-header-row">
+        <h1 id="mainTitle">Kódoló / Dekódoló</h1>
+        
+        <div id="scanModeToggle" class="scan-mode-toggle hidden">
+            <label>Beolvasás:</label>
+            <select id="scanModeSelect" onchange="updateUI()">
+                <option value="camera">Kamera</option>
+                <option value="file">Képfájl (File)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="flex-row">
+        <div>
+            <label for="format">Formátum:</label>
+            <select id="format" onchange="updateUI()">
+                <option value="qr">QR Kód</option>
+                <option value="barcode">Vonalkód (Code128)</option>
+                <option value="morse">Morze Kód</option>
+                <option value="binary">Bináris Kód</option>
+                <option value="hex">Hexadecimális (Hex)</option>
+                <option value="base64">Base64</option>
+                <option value="url">URL Kódolás</option>
+                <option value="secret">Titkosított JS (AI Védett)</option>
+            </select>
+        </div>
+        <div>
+            <label for="direction">Irány:</label>
+            <select id="direction" onchange="updateUI()">
+                <option value="encode">Szövegből -> Kód (Kódolás)</option>
+                <option value="decode">Kódból -> Szöveg (Dekódolás)</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="qrIconContainer">
+        <label for="qrIcon">QR Kód középső ikon (icons mappa):</label>
+        <select id="qrIcon">
+            <option value="">Nincs ikon</option>
+        </select>
+    </div>
+
+    <div id="fileInputContainer" class="hidden">
+        <label for="imageUpload">Tölts fel egy kódot tartalmazó képet:</label>
+        <input type="file" id="imageUpload" accept="image/*">
+    </div>
+
+    <div id="cameraContainer" class="hidden">
+        <label for="cameraSelect">Kamera kiválasztása:</label>
+        <select id="cameraSelect" onchange="if(isCameraScanning) startScanner('encode')"></select>
+        
+        <div id="reader" onclick="triggerFocus(event)" title="Kattints az újrafókuszáláshoz!"></div>
+        <div style="text-align: center;">
+            <button id="stopCameraBtn" class="stop-cam-btn hidden" onclick="stopScanner()">⏹ Keresés Leállítása</button>
+        </div>
+        <img id="snapshotImg" class="hidden" title="A kód pillanatképe (Jobb klikk > Kép másolása)">
+    </div>
+
+    <div id="textInputContainer">
+        <label for="inputText" id="inputLabel">Szöveg vagy Kód megadása:</label>
+        <textarea id="inputText" placeholder="Írd ide a szöveget..."></textarea>
+        <button id="clearBtn" title="Szöveg törlése" onclick="askConfirm('clearText')">🗑️</button>
+    </div>
+
+    <button class="main-btn" id="actionBtn" onclick="process()">Átalakítás</button>
+
+    <label>Eredmény:</label>
+    <div class="output-container">
+        <button id="copyBtn" onclick="copyOutput()" title="Kimenet másolása">📄📄</button>
+        <div id="errorOutput"></div>
+        <div id="textOutput"></div>
+        <div id="qrCodeOutput"></div>
+        <img id="barcodeOutput">
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- 2. LELTÁR / LISTÁK FÜL                         -->
+<!-- ============================================== -->
+<div class="container hidden" id="inventoryView">
+    <div class="panel-header-row">
+        <h1 style="color: var(--accent);">Készlet Listák</h1>
+    </div>
+
+    <div class="flex-row" style="align-items: flex-end;">
+        <div style="flex: 2;">
+            <label>Kiválasztott Lista:</label>
+            <select id="invListSelector" onchange="renderCurrentList()">
+                <option value="">-- Válassz listát --</option>
+            </select>
+        </div>
+        <div style="flex: 1;">
+            <button class="main-btn" onclick="document.getElementById('newListModal').style.display='flex'">+ Új Lista</button>
+        </div>
+        <div style="flex: 1;">
+            <button class="main-btn" onclick="document.getElementById('importListModal').style.display='flex'" style="background: #FF9800;">🔗 Import</button>
+        </div>
+    </div>
+
+    <div id="invContentArea" class="hidden">
+        <div class="inventory-header">
+            <div>
+                <h3 class="inventory-title"><span id="invViewName">Lista Neve</span> <span id="invViewReadOnly" class="readonly-badge hidden">Csak olvasható</span></h3>
+                <span class="inventory-id">ID: <span id="invViewId">ABC123XYZ0</span></span>
+                <span class="inventory-loc" id="invViewLoc">Helyszín: Ismeretlen</span>
+            </div>
+            <div>
+                <div class="stars" id="invViewStars">
+                    <span onclick="rateList(1)">★</span><span onclick="rateList(2)">★</span><span onclick="rateList(3)">★</span><span onclick="rateList(4)">★</span><span onclick="rateList(5)">★</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="inventory-controls">
+            <button class="main-btn success-btn" id="invAddBtn" onclick="document.getElementById('addItemModal').style.display='flex'">➕ Új Tétel</button>
+            <button class="main-btn" onclick="startScanner('smart')" style="background:#9C27B0;">📷 Okos Szkenner</button>
+            <button class="main-btn" onclick="shareList()" style="background:#00BCD4;">📤 Megosztás</button>
+        </div>
+
+        <h4 style="border-bottom: 1px solid #333; padding-bottom: 5px;">Tételek (<span id="invItemCount">0</span>)</h4>
+        <div id="invItemsList">
+            <!-- Items injected here -->
+        </div>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- MODÁLIS ABLAKOK                                -->
+<!-- ============================================== -->
 
 <!-- Beállítások Panel -->
 <div id="settingsModal" class="modal">
@@ -235,154 +422,221 @@
     </div>
 </div>
 
-<!-- Törlés megerősítő Ablak -->
+<!-- Általános Megerősítő Ablak (Törlésekhez) -->
 <div id="confirmModal" class="modal">
     <div class="modal-content" style="text-align: center; max-width: 350px;">
         <h3>Biztosan törlöd?</h3>
-        <p>A beírt szöveg véglegesen elvész.</p>
+        <p>A művelet véglegesen elvész.</p>
         <div class="flex-btn-row">
-            <button class="main-btn danger-btn" onclick="clearTextConfirmed()">Igen, törlés</button>
-            <button class="main-btn" onclick="document.getElementById('confirmModal').style.display='none'" style="background-color:#555;">Mégse</button>
+            <button class="main-btn danger-btn" onclick="executeConfirm()">Igen, törlés</button>
+            <button class="main-btn" onclick="closeConfirm()" style="background-color:#555;">Mégse</button>
         </div>
     </div>
 </div>
 
 <!-- Felhasználói Szerződés Ablak -->
 <div id="tosModal" class="modal">
-    <div class="modal-content legal-text">
+    <div class="modal-content">
+        <span id="tosCloseX" onclick="document.getElementById('tosModal').style.display='none'">✖</span>
         <h3>Felhasználói Szerződés</h3>
-        <h4>1. Felelősségkizárás</h4>
-        <p>A Bezzeg Stúdió kifejezetten kizár minden felelősséget az oldalon a felhasználók által generált tartalmakért (ideértve, de nem kizárólagosan a szövegeket, kódokat, vonalkódokat, képeket). Az adatok beviteléből és dekódolásából származó minden jogi és anyagi következmény kizárólag a felhasználót terheli.</p>
-        <h4>2. Tiltott tartalmak</h4>
-        <p>Szigorúan tilos a platform használata 18 éven aluliak számára nem megfelelő (18+), illegális, uszító, vagy szerzői jogokat sértő tartalmak generálására, titkosítására és terjesztésére.</p>
-        <h4>3. Szellemi tulajdon</h4>
-        <p>Az oldal forráskódjának, logikájának, egyedi titkosítási algoritmusának és arculatának (UI/UX dizájn) engedély nélküli másolása, többszörözése, illetve módosított verzióinak (remix) nyilvános közzététele szigorúan tilos és jogi lépéseket vonhat maga után.</p>
-        <h4>4. Közreműködés</h4>
-        <p>Az oldal kódjának, algoritmusainak és architektúrájának fejlesztésében a <i>Gemini Pro</i> mesterséges intelligencia nyújtott technikai asszisztenciát.</p>
-        <button class="main-btn" onclick="document.getElementById('tosModal').style.display='none'">Elfogadom és Bezár</button>
+        <div class="legal-text-box">
+            <h4>1. Felelősségkizárás</h4>
+            <p>A Bezzeg Stúdió kifejezetten kizár minden felelősséget az oldalon a felhasználók által generált tartalmakért (ideértve a szövegeket, kódokat, vonalkódokat, képeket és leltárakat). Az adatok beviteléből és dekódolásából származó minden jogi és anyagi következmény kizárólag a felhasználót terheli.</p>
+            <h4>2. Tiltott tartalmak</h4>
+            <p>Szigorúan tilos a platform használata 18 éven aluliak számára nem megfelelő (18+), illegális, uszító, vagy szerzői jogokat sértő tartalmak generálására, titkosítására és terjesztésére.</p>
+            <h4>3. Szellemi tulajdon és Adatvédelem</h4>
+            <p>Az oldal forráskódjának, logikájának, egyedi titkosítási algoritmusának és arculatának (UI/UX dizájn) engedély nélküli másolása, többszörözése, illetve módosított verzióinak (remix) nyilvános közzététele szigorúan tilos. A létrehozott listák lokálisan tárolódnak.</p>
+            <h4>4. Közreműködés</h4>
+            <p>Az oldal kódjának, algoritmusainak és architektúrájának fejlesztésében a <i>Gemini Pro</i> mesterséges intelligencia nyújtott technikai asszisztenciát.</p>
+        </div>
+        <label class="tos-checkbox-label">
+            <input type="checkbox" id="tosCheckbox" onchange="document.getElementById('tosAcceptBtn').disabled = !this.checked;">
+            Elfogadom a felhasználói feltételeket
+        </label>
+        <button id="tosAcceptBtn" class="main-btn" disabled onclick="acceptTos()">Tovább</button>
     </div>
 </div>
 
-
-<div class="container">
-    <div class="panel-header-row">
-        <h1 id="mainTitle">Kódoló / Dekódoló</h1>
+<!-- Új Lista Modal -->
+<div id="newListModal" class="modal">
+    <div class="modal-content">
+        <h3>Új Lista Létrehozása</h3>
+        <label>Lista Neve (Csak betűk és számok):</label>
+        <input type="text" id="newListName" placeholder="Pl. Aldi Leltar 2026">
+        <label>Helyszín (Opcionális):</label>
+        <input type="text" id="newListLoc" placeholder="Pl. Orosháza, Fő utca">
         
-        <!-- Kamera / Fájl Váltó -->
-        <div id="scanModeToggle" class="scan-mode-toggle hidden">
-            <label>Beolvasás:</label>
-            <select id="scanModeSelect" onchange="updateUI()">
-                <option value="camera">Kamera</option>
-                <option value="file">Képfájl (File)</option>
-            </select>
+        <div class="flex-btn-row">
+            <button class="main-btn success-btn" onclick="createNewList()">Létrehozás</button>
+            <button class="main-btn" onclick="document.getElementById('newListModal').style.display='none'" style="background-color:#555;">Mégse</button>
         </div>
     </div>
+</div>
 
-    <div class="flex-row">
-        <div>
-            <label for="format">Formátum:</label>
-            <select id="format">
-                <option value="qr">QR Kód</option>
-                <option value="barcode">Vonalkód (Code128)</option>
-                <option value="morse">Morze Kód</option>
-                <option value="binary">Bináris Kód</option>
-                <option value="hex">Hexadecimális (Hex)</option>
-                <option value="base64">Base64</option>
-                <option value="url">URL Kódolás</option>
-                <option value="secret">Titkosított JS (AI Védett)</option>
-            </select>
+<!-- Új Tétel Hozzáadása Modal -->
+<div id="addItemModal" class="modal">
+    <div class="modal-content">
+        <h3>Új Tétel Hozzáadása</h3>
+        <label>Azonosító (ID):</label>
+        <div class="flex-row" style="margin-bottom: 5px;">
+            <input type="text" id="newItemId" placeholder="ID beírása vagy olvasása..." style="flex:2;">
+            <button class="main-btn" style="flex:1; margin-top:0; background:#FF9800;" onclick="startScanner('add_item')">📷 Szkenner</button>
         </div>
-        <div>
-            <label for="direction">Irány:</label>
-            <select id="direction">
-                <option value="encode">Szövegből -> Kód (Kódolás)</option>
-                <option value="decode">Kódból -> Szöveg (Dekódolás)</option>
-            </select>
+        <label style="font-size:12px; font-weight:normal; margin-bottom:15px;">Vagy tölts fel egy kódot tartalmazó képet:</label>
+        <input type="file" id="newItemFile" accept="image/*" onchange="scanFileForAdd(this)" style="margin-bottom:15px;">
+        
+        <label>Tétel Neve:</label>
+        <input type="text" id="newItemName" placeholder="Pl. Rostos Kenyér">
+        <label>Leírás / Ár:</label>
+        <input type="text" id="newItemDesc" placeholder="Pl. 560 Ft">
+        
+        <div class="flex-btn-row">
+            <button class="main-btn success-btn" onclick="addItemToList()">Hozzáadás</button>
+            <button class="main-btn" onclick="document.getElementById('addItemModal').style.display='none'" style="background-color:#555;">Bezárás</button>
         </div>
     </div>
+</div>
 
-    <div id="qrIconContainer">
-        <label for="qrIcon">QR Kód középső ikon (icons mappa):</label>
-        <select id="qrIcon">
-            <option value="">Nincs ikon</option>
-        </select>
-    </div>
-
-    <!-- Fájl feltöltő (QR és Vonalkód fájlból) -->
-    <div id="fileInputContainer" class="hidden">
-        <label for="imageUpload">Tölts fel egy kódot tartalmazó képet:</label>
-        <input type="file" id="imageUpload" accept="image/*">
-    </div>
-
-    <!-- Kamera modul -->
-    <div id="cameraContainer" class="hidden">
-        <label for="cameraSelect">Kamera kiválasztása:</label>
-        <select id="cameraSelect" onchange="if(isCameraScanning) startBarcodeScanner()"></select>
+<!-- Importálás Modal -->
+<div id="importListModal" class="modal">
+    <div class="modal-content">
+        <h3>Lista Importálása</h3>
+        <p style="font-size:14px; color:#aaa;">Illeszd be a megosztott listakódot ide. Az importált listák "Csak olvasható" módban kerülnek mentésre.</p>
+        <textarea id="importCodeArea" placeholder="Illeszd be a kódot ide..."></textarea>
         
-        <div id="reader" onclick="triggerFocus(event)" title="Kattints az újrafókuszáláshoz!"></div>
-        
+        <div class="flex-btn-row">
+            <button class="main-btn success-btn" onclick="importList()">Importálás</button>
+            <button class="main-btn" onclick="document.getElementById('importListModal').style.display='none'" style="background-color:#555;">Mégse</button>
+        </div>
+    </div>
+</div>
+
+<!-- Általános Szkenner Modal (Leltárhoz) -->
+<div id="scannerModal" class="modal">
+    <div class="modal-content" style="max-width:600px;">
+        <h3 id="scannerModalTitle">Kód Beolvasása</h3>
+        <select id="modalCameraSelect" onchange="changeModalCamera()" style="margin-bottom: 10px;"></select>
+        <div id="modalReader" class="scanner-box" onclick="triggerModalFocus(event)"></div>
         <div style="text-align: center;">
-            <button id="stopCameraBtn" class="hidden" onclick="stopScannerBtn()">⏹ Keresés Leállítása</button>
+            <button class="stop-cam-btn" onclick="closeScannerModal()">⏹ Mégse</button>
         </div>
-        
-        <img id="snapshotImg" class="hidden" title="A kód pillanatképe (Jobb klikk > Kép másolása)">
     </div>
+</div>
 
-    <!-- Bemeneti Mező -->
-    <div id="textInputContainer">
-        <label for="inputText" id="inputLabel">Szöveg vagy Kód megadása:</label>
-        <textarea id="inputText" placeholder="Írd ide a szöveget..."></textarea>
-        <button id="clearBtn" title="Szöveg törlése" onclick="askClearText()">🗑️</button>
-    </div>
-
-    <button class="main-btn" id="actionBtn" onclick="process()">Átalakítás</button>
-
-    <label>Eredmény:</label>
-    <div class="output-container">
-        <button id="copyBtn" onclick="copyOutput()" title="Kimenet másolása">📄📄</button>
-        
-        <div id="errorOutput"></div>
-        <div id="textOutput"></div>
-        <div id="qrCodeOutput"></div>
-        <img id="barcodeOutput">
+<!-- Okos Szkenner Eredmény Modal -->
+<div id="smartScanResultModal" class="modal">
+    <div class="modal-content" style="text-align: center;">
+        <h3>Beolvasott Tétel</h3>
+        <div class="smart-scan-result" id="smartResName">Termék Neve</div>
+        <div class="smart-scan-desc" id="smartResDesc">Leírás / Ár</div>
+        <div style="font-family:monospace; color:#888; margin-top:10px;" id="smartResId">ID: 12345</div>
+        <button class="main-btn" onclick="document.getElementById('smartScanResultModal').style.display='none'; startScanner('smart');">Folytatás (Következő)</button>
+        <button class="main-btn" onclick="document.getElementById('smartScanResultModal').style.display='none'" style="background-color:#555;">Bezárás</button>
     </div>
 </div>
 
 <footer>
-    &copy; 2026 Bezzeg Stúdió | <a onclick="document.getElementById('tosModal').style.display='flex'">Felhasználói szerződés</a>
+    &copy; 2026 Bezzeg Stúdió | <a onclick="openTosManual()">Felhasználói szerződés</a>
 </footer>
 
 <script>
-    // --- Színtéma Kezelő ---
+    // --- Globális Változók és Inicializálás ---
+    let currentTab = 'encode';
+    
+    // Színtéma Kezelő
     const colorMap = {
-        'qr': '#2196F3',       // Kék
-        'barcode': '#FF9800',  // Narancs
-        'morse': '#F44336',    // Piros
-        'binary': '#4CAF50',   // Zöld
-        'base64': '#FFEB3B',   // Citromsárga
-        'url': '#795548',      // Barna
-        'hex': '#00BCD4',      // Ciánkék / Türkiz
-        'secret': '#9C27B0'    // Lila
+        'qr': '#2196F3',
+        'barcode': '#FF9800',
+        'morse': '#F44336',
+        'binary': '#4CAF50',
+        'base64': '#FFEB3B',
+        'url': '#795548',
+        'hex': '#00BCD4',
+        'secret': '#9C27B0'
     };
 
-    function updateColors(format) {
-        let selectedColor = colorMap[format] || '#2196F3';
+    function updateColors(forceColor = null) {
+        let selectedColor = forceColor;
+        if (!selectedColor) {
+            if (currentTab === 'encode') {
+                selectedColor = colorMap[document.getElementById('format').value] || '#00BCD4';
+            } else {
+                selectedColor = '#00BCD4'; // Leltár alapértelmezett színe türkiz
+            }
+        }
         document.documentElement.style.setProperty('--accent', selectedColor);
     }
 
-    // --- Törlés Funkció ---
-    function askClearText() {
-        if(document.getElementById('inputText').value.trim() !== "") {
-            document.getElementById('confirmModal').style.display = 'flex';
+    function switchTab(tab) {
+        currentTab = tab;
+        document.getElementById('tabBtnEncode').classList.remove('active');
+        document.getElementById('tabBtnInventory').classList.remove('active');
+        document.getElementById('encodeView').classList.add('hidden');
+        document.getElementById('inventoryView').classList.add('hidden');
+        
+        ensureCameraStopped(); // Fülváltáskor minden kamera megáll
+
+        if (tab === 'encode') {
+            document.getElementById('tabBtnEncode').classList.add('active');
+            document.getElementById('encodeView').classList.remove('hidden');
+            updateUI();
+        } else {
+            document.getElementById('tabBtnInventory').classList.add('active');
+            document.getElementById('inventoryView').classList.remove('hidden');
+            updateColors('#00BCD4');
+            renderListDropdown();
         }
     }
-    
-    function clearTextConfirmed() {
-        document.getElementById('inputText').value = "";
-        clearOutputs();
-        document.getElementById('confirmModal').style.display = 'none';
+
+    // --- TOS (Felhasználói Szerződés) Kezelő ---
+    document.addEventListener("DOMContentLoaded", () => {
+        if (!localStorage.getItem('bezzegTosAccepted')) {
+            document.getElementById('tosModal').style.display = 'flex';
+            document.getElementById('tosCloseX').style.display = 'none';
+        }
+        loadBgSettings();
+        loadInventory();
+        updateUI();
+    });
+
+    function acceptTos() {
+        if (document.getElementById('tosCheckbox').checked) {
+            localStorage.setItem('bezzegTosAccepted', 'true');
+            document.getElementById('tosModal').style.display = 'none';
+        }
     }
 
+    function openTosManual() {
+        document.getElementById('tosModal').style.display = 'flex';
+        document.getElementById('tosCloseX').style.display = 'inline';
+    }
+
+    // --- Törlés / Megerősítés Logika ---
+    let confirmAction = null;
+    let confirmParam = null;
+
+    function askConfirm(action, param = null) {
+        confirmAction = action;
+        confirmParam = param;
+        document.getElementById('confirmModal').style.display = 'flex';
+    }
+    
+    function closeConfirm() {
+        document.getElementById('confirmModal').style.display = 'none';
+        confirmAction = null; confirmParam = null;
+    }
+
+    function executeConfirm() {
+        if (confirmAction === 'clearText') {
+            document.getElementById('inputText').value = "";
+            clearOutputs();
+        } else if (confirmAction === 'deleteListItem') {
+            deleteItemLogic(confirmParam);
+        }
+        closeConfirm();
+    }
+
+    // --- KÓDOLÓ / DEKÓDOLÓ HELPEREK ---
     function showError(msg) {
         document.getElementById('textOutput').style.display = 'none';
         document.getElementById('qrCodeOutput').style.display = 'none';
@@ -407,11 +661,8 @@
     function copyOutput() {
         let textToCopy = "";
         let textOutput = document.getElementById('textOutput');
-        if (textOutput.style.display === 'block') {
-            textToCopy = textOutput.innerText;
-        } else {
-            textToCopy = document.getElementById('inputText').value;
-        }
+        if (textOutput.style.display === 'block') textToCopy = textOutput.innerText;
+        else textToCopy = document.getElementById('inputText').value;
         if(textToCopy) {
             navigator.clipboard.writeText(textToCopy).then(() => {
                 let btn = document.getElementById('copyBtn');
@@ -421,169 +672,197 @@
         }
     }
 
-    // --- Kamera Logika ---
+    // --- KÖZÖS KAMERA LOGIKA (Több kontextus kezelése) ---
     let html5QrCode = null;
     let isCameraScanning = false;
     let cameraPermissionGranted = false;
+    let currentScanContext = null; // 'encode', 'add_item', 'smart'
+    let modalScanner = null;
 
     function triggerFocus(event) {
         if (!isCameraScanning) return;
         let reader = document.getElementById('reader');
-        let rect = reader.getBoundingClientRect();
-        
+        createFocusRing(event, reader);
+    }
+    function triggerModalFocus(event) {
+        if (!isCameraScanning) return;
+        let reader = document.getElementById('modalReader');
+        createFocusRing(event, reader);
+    }
+    function createFocusRing(event, container) {
+        let rect = container.getBoundingClientRect();
         let x = event.clientX - rect.left;
         let y = event.clientY - rect.top;
-        
         let focusRing = document.createElement('div');
         focusRing.className = 'focus-ring';
-        focusRing.style.left = x + 'px';
-        focusRing.style.top = y + 'px';
-        reader.appendChild(focusRing);
+        focusRing.style.left = x + 'px'; focusRing.style.top = y + 'px';
+        container.appendChild(focusRing);
         setTimeout(() => focusRing.remove(), 600);
-
         try {
-            let video = document.querySelector('#reader video');
+            let video = container.querySelector('video');
             if (video && video.srcObject) {
                 let track = video.srcObject.getVideoTracks()[0];
-                let capabilities = track.getCapabilities();
-                if (capabilities && capabilities.focusMode) {
-                    track.applyConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(e => console.log(e));
-                }
+                if (track.getCapabilities().focusMode) track.applyConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(e=>{});
             }
         } catch (err) {}
     }
 
-    function checkCameraPermissionsAndPopulate(autoStart = false) {
+    function checkCameraPermissions(callback) {
         Html5Qrcode.getCameras().then(devices => {
-            const camSelect = document.getElementById('cameraSelect');
-            const currentVal = camSelect.value;
-            camSelect.innerHTML = '';
-            
             if (devices && devices.length) {
                 if (devices[0].label !== "") cameraPermissionGranted = true;
-
-                devices.forEach((camera, index) => {
-                    let opt = document.createElement('option');
-                    opt.value = camera.id;
-                    opt.text = camera.label || `Kamera ${index + 1}`;
-                    camSelect.appendChild(opt);
-                });
-                
-                if (currentVal && Array.from(camSelect.options).some(o => o.value === currentVal)) {
-                    camSelect.value = currentVal;
-                }
-                if (autoStart) startBarcodeScanner();
-            } else {
-                camSelect.innerHTML = '<option value="">Nincs elérhető kamera</option>';
+                if (callback) callback(devices);
             }
-        }).catch(err => {
-            cameraPermissionGranted = false;
-        });
+        }).catch(err => { cameraPermissionGranted = false; if(callback) callback([]); });
     }
 
-    function startBarcodeScanner() {
-        clearOutputs();
-        document.getElementById('snapshotImg').classList.add('hidden');
-        const camSelect = document.getElementById('cameraSelect');
-        
-        let cameraConfig = { facingMode: "environment" }; 
-        if (camSelect.options.length > 0 && camSelect.value !== "") {
-            cameraConfig = camSelect.value;
-        }
-
-        if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-
-        if (isCameraScanning) {
-            html5QrCode.stop().then(() => {
-                isCameraScanning = false;
-                startTheCamera(cameraConfig);
-            }).catch(err => {
-                isCameraScanning = false;
-                startTheCamera(cameraConfig);
+    function populateSelect(selectId, devices, retainValue = true) {
+        const select = document.getElementById(selectId);
+        const currentVal = select.value;
+        select.innerHTML = '';
+        if (devices.length) {
+            devices.forEach((cam, i) => {
+                let opt = document.createElement('option');
+                opt.value = cam.id; opt.text = cam.label || `Kamera ${i + 1}`;
+                select.appendChild(opt);
             });
+            if (retainValue && currentVal && Array.from(select.options).some(o => o.value === currentVal)) select.value = currentVal;
         } else {
-            startTheCamera(cameraConfig);
+            select.innerHTML = '<option value="">Nincs elérhető kamera</option>';
         }
     }
 
-    function startTheCamera(cameraConfig) {
-        document.getElementById('stopCameraBtn').classList.remove('hidden');
-        document.getElementById('actionBtn').innerText = "Kamera Újraindítása";
-        
-        html5QrCode.start(
-            cameraConfig,
-            { 
-                fps: 15, 
-                qrbox: { width: 300, height: 150 },
-                experimentalFeatures: {
-                    useBarCodeDetectorIfSupported: true // Natív AI alapú dekódoló
-                }
-            },
-            (decodedText, decodedResult) => {
-                captureSnapshot();
-                html5QrCode.stop().then(() => {
-                    isCameraScanning = false;
-                    document.getElementById('stopCameraBtn').classList.add('hidden');
-                }).catch(e => console.warn(e));
-                
-                let textOut = document.getElementById('textOutput');
-                textOut.style.display = 'block';
-                textOut.innerText = decodedText;
-                document.getElementById('copyBtn').style.display = 'block';
-            },
-            (errorMessage) => { }
-        ).then(() => {
-            isCameraScanning = true;
-            if (!cameraPermissionGranted) {
-                cameraPermissionGranted = true;
-                checkCameraPermissionsAndPopulate(false); 
+    function startScanner(context) {
+        currentScanContext = context;
+        ensureCameraStopped().then(() => {
+            if (context === 'encode') {
+                startMainScanner();
+            } else {
+                openScannerModal();
             }
-        }).catch(err => {
-            isCameraScanning = false;
-            document.getElementById('stopCameraBtn').classList.add('hidden');
-            showError("ERROR a kamera nincs engedélyezve, vagy a böngésző blokkolja!");
         });
     }
 
-    function stopScannerBtn() {
-        if (html5QrCode && isCameraScanning) {
-            html5QrCode.stop().then(() => {
-                isCameraScanning = false;
-                document.getElementById('stopCameraBtn').classList.add('hidden');
-                showError("Nem található a kód.");
-            }).catch(e => console.warn(e));
-        }
+    function stopScanner() {
+        ensureCameraStopped().then(() => {
+            if(currentScanContext === 'encode') showError("Nem található a kód.");
+        });
     }
 
     function ensureCameraStopped() {
-        if (html5QrCode && isCameraScanning) {
-            html5QrCode.stop().then(() => {
-                isCameraScanning = false;
-                document.getElementById('stopCameraBtn').classList.add('hidden');
-            }).catch(e => console.warn(e));
-        }
+        return new Promise((resolve) => {
+            if (html5QrCode && isCameraScanning) {
+                html5QrCode.stop().then(() => {
+                    isCameraScanning = false;
+                    document.getElementById('stopCameraBtn').classList.add('hidden');
+                    resolve();
+                }).catch(e => { console.warn(e); resolve(); });
+            } else {
+                resolve();
+            }
+        });
     }
 
-    function captureSnapshot() {
-        let video = document.querySelector('#reader video');
+    // Fő Scanner (Kódoló fül)
+    function startMainScanner() {
+        clearOutputs();
+        document.getElementById('snapshotImg').classList.add('hidden');
+        
+        checkCameraPermissions((devices) => {
+            populateSelect('cameraSelect', devices);
+            let camId = document.getElementById('cameraSelect').value;
+            let config = camId ? camId : { facingMode: "environment" };
+            
+            if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+            document.getElementById('stopCameraBtn').classList.remove('hidden');
+            document.getElementById('actionBtn').innerText = "Kamera Újraindítása";
+            
+            html5QrCode.start(
+                config,
+                { fps: 15, qrbox: { width: 300, height: 150 }, experimentalFeatures: { useBarCodeDetectorIfSupported: true } },
+                (decodedText) => {
+                    captureSnapshot('#reader video', 'snapshotImg');
+                    ensureCameraStopped();
+                    document.getElementById('textOutput').style.display = 'block';
+                    document.getElementById('textOutput').innerText = decodedText;
+                    document.getElementById('copyBtn').style.display = 'block';
+                },
+                () => {}
+            ).then(() => { isCameraScanning = true; }).catch(err => {
+                isCameraScanning = false; document.getElementById('stopCameraBtn').classList.add('hidden');
+                showError("ERROR a kamera nincs engedélyezve, vagy a böngésző blokkolja!");
+            });
+        });
+    }
+
+    // Modal Scanner (Leltár fül: Hozzáadás vagy Okos Scan)
+    function openScannerModal() {
+        document.getElementById('scannerModal').style.display = 'flex';
+        checkCameraPermissions((devices) => {
+            populateSelect('modalCameraSelect', devices);
+            startModalScannerInner();
+        });
+    }
+    
+    function changeModalCamera() {
+        if(isCameraScanning) ensureCameraStopped().then(() => startModalScannerInner());
+    }
+
+    function startModalScannerInner() {
+        let camId = document.getElementById('modalCameraSelect').value;
+        let config = camId ? camId : { facingMode: "environment" };
+        if (!html5QrCode) html5QrCode = new Html5Qrcode("modalReader");
+        
+        let title = currentScanContext === 'add_item' ? "Tétel Azonosító Beolvasása" : "Okos Szkenner";
+        document.getElementById('scannerModalTitle').innerText = title;
+
+        html5QrCode.start(
+            config, { fps: 15, qrbox: { width: 300, height: 150 }, experimentalFeatures: { useBarCodeDetectorIfSupported: true } },
+            (decodedText) => {
+                ensureCameraStopped().then(() => {
+                    document.getElementById('scannerModal').style.display = 'none';
+                    if (currentScanContext === 'add_item') {
+                        document.getElementById('newItemId').value = decodedText;
+                    } else if (currentScanContext === 'smart') {
+                        processSmartScan(decodedText);
+                    }
+                });
+            },
+            () => {}
+        ).then(() => { isCameraScanning = true; }).catch(err => {
+            isCameraScanning = false; alert("Hiba a kamera indításakor."); closeScannerModal();
+        });
+    }
+
+    function closeScannerModal() {
+        ensureCameraStopped().then(() => {
+            document.getElementById('scannerModal').style.display = 'none';
+        });
+    }
+
+    function scanFileForAdd(inputObj) {
+        if(!inputObj.files.length) return;
+        const html5QrCodeFile = new Html5Qrcode("modalReader"); // temporary div just to read
+        html5QrCodeFile.scanFile(inputObj.files[0], true)
+        .then(text => { document.getElementById('newItemId').value = text; inputObj.value = ""; })
+        .catch(() => { alert("Nem sikerült kiolvasni a kódot a képből."); inputObj.value = ""; });
+    }
+
+    function captureSnapshot(videoSelector, imgId) {
+        let video = document.querySelector(videoSelector);
         if(video) {
             let canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0);
-            let img = document.getElementById('snapshotImg');
+            let img = document.getElementById(imgId);
             img.src = canvas.toDataURL('image/png');
             img.classList.remove('hidden');
         }
     }
 
-    // --- Háttérkezelő Rendszer (LocalStorage támogatással) ---
+    // --- HÁTTÉRKEZELŐ --- (változatlan a korábbiból)
     const bgLayers = [document.getElementById('bg-layer-1'), document.getElementById('bg-layer-2')];
-    let currentLayerIdx = 0;
-    let validBackgrounds = [];
-    let bgTimer = null;
-    let currentBgSeqIndex = 0;
-
+    let currentLayerIdx = 0; let validBackgrounds = []; let bgTimer = null; let currentBgSeqIndex = 0;
     function loadBgSettings() {
         let saved = localStorage.getItem('bezzegSettings');
         if(saved) {
@@ -591,7 +870,6 @@
                 let s = JSON.parse(saved);
                 document.getElementById('bgMode').value = s.mode || 'random';
                 document.getElementById('bgInterval').value = s.interval || 120;
-                // Várjuk meg míg a validBackgrounds betöltődik
                 setTimeout(() => { 
                     if(s.staticSrc) document.getElementById('bgStaticSelect').value = s.staticSrc; 
                     toggleSettingsUI();
@@ -599,7 +877,6 @@
             } catch(e) {}
         }
     }
-
     function scanBackgrounds() {
         for(let i = 1; i <= 15; i++) {
             ['png', 'jpg'].forEach(ext => {
@@ -614,99 +891,60 @@
             });
         }
     }
-
     function updateBgStaticDropdown() {
         let select = document.getElementById('bgStaticSelect');
         select.innerHTML = "";
         validBackgrounds.forEach(bg => {
-            let opt = document.createElement('option');
-            opt.value = bg.src;
-            opt.textContent = bg.name;
-            select.appendChild(opt);
+            let opt = document.createElement('option'); opt.value = bg.src; opt.textContent = bg.name; select.appendChild(opt);
         });
     }
-
     function toggleSettingsUI() {
         let mode = document.getElementById('bgMode').value;
         if(mode === 'static') {
-            document.getElementById('bgSelectWrapper').classList.remove('hidden');
-            document.getElementById('bgIntervalWrapper').classList.add('hidden');
+            document.getElementById('bgSelectWrapper').classList.remove('hidden'); document.getElementById('bgIntervalWrapper').classList.add('hidden');
         } else {
-            document.getElementById('bgSelectWrapper').classList.add('hidden');
-            document.getElementById('bgIntervalWrapper').classList.remove('hidden');
+            document.getElementById('bgSelectWrapper').classList.add('hidden'); document.getElementById('bgIntervalWrapper').classList.remove('hidden');
         }
     }
-
     function changeBackground() {
         if(validBackgrounds.length === 0) return;
-        let mode = document.getElementById('bgMode').value;
-        let nextSrc = "";
-
-        if(mode === 'static') {
-            nextSrc = document.getElementById('bgStaticSelect').value;
-        } else if (mode === 'random') {
-            let rnd = Math.floor(Math.random() * validBackgrounds.length);
-            nextSrc = validBackgrounds[rnd].src;
-        } else if (mode === 'seq') {
-            nextSrc = validBackgrounds[currentBgSeqIndex].src;
-            currentBgSeqIndex++;
-            if (currentBgSeqIndex >= validBackgrounds.length) currentBgSeqIndex = 0;
-        }
-
+        let mode = document.getElementById('bgMode').value; let nextSrc = "";
+        if(mode === 'static') nextSrc = document.getElementById('bgStaticSelect').value;
+        else if (mode === 'random') { let rnd = Math.floor(Math.random() * validBackgrounds.length); nextSrc = validBackgrounds[rnd].src; } 
+        else if (mode === 'seq') { nextSrc = validBackgrounds[currentBgSeqIndex].src; currentBgSeqIndex++; if (currentBgSeqIndex >= validBackgrounds.length) currentBgSeqIndex = 0; }
         if(nextSrc) {
             let nextLayerIdx = currentLayerIdx === 0 ? 1 : 0;
             bgLayers[nextLayerIdx].style.backgroundImage = `url('${nextSrc}')`;
-            bgLayers[nextLayerIdx].style.opacity = 1;
-            bgLayers[currentLayerIdx].style.opacity = 0;
-            currentLayerIdx = nextLayerIdx;
+            bgLayers[nextLayerIdx].style.opacity = 1; bgLayers[currentLayerIdx].style.opacity = 0; currentLayerIdx = nextLayerIdx;
         }
     }
-
     function saveBgSettings() {
         clearInterval(bgTimer);
         let mode = document.getElementById('bgMode').value;
         let intervalSec = parseInt(document.getElementById('bgInterval').value);
-        if(isNaN(intervalSec) || intervalSec < 5) intervalSec = 5;
-        if(intervalSec > 3600) intervalSec = 3600;
+        if(isNaN(intervalSec) || intervalSec < 5) intervalSec = 5; if(intervalSec > 3600) intervalSec = 3600;
         document.getElementById('bgInterval').value = intervalSec; 
-        
-        let settings = {
-            mode: mode,
-            interval: intervalSec,
-            staticSrc: document.getElementById('bgStaticSelect').value
-        };
-        localStorage.setItem('bezzegSettings', JSON.stringify(settings));
-
+        localStorage.setItem('bezzegSettings', JSON.stringify({ mode: mode, interval: intervalSec, staticSrc: document.getElementById('bgStaticSelect').value }));
         changeBackground();
-        if(mode !== 'static') {
-            bgTimer = setInterval(changeBackground, intervalSec * 1000);
-        }
+        if(mode !== 'static') bgTimer = setInterval(changeBackground, intervalSec * 1000);
         document.getElementById('settingsModal').style.display = 'none';
     }
-
     function resetBgSettings() {
         localStorage.removeItem('bezzegSettings');
-        document.getElementById('bgMode').value = 'random';
-        document.getElementById('bgInterval').value = 120;
-        toggleSettingsUI();
-        saveBgSettings();
+        document.getElementById('bgMode').value = 'random'; document.getElementById('bgInterval').value = 120;
+        toggleSettingsUI(); saveBgSettings();
     }
-
     scanBackgrounds();
-    loadBgSettings();
     setTimeout(() => { changeBackground(); bgTimer = setInterval(changeBackground, parseInt(document.getElementById('bgInterval').value)*1000 || 120000); }, 1000);
 
     // --- Ikonok betöltése a QR listába ---
     const iconSelect = document.getElementById('qrIcon');
     for(let i = 1; i <= 15; i++) {
         ['png', 'jpg'].forEach(ext => {
-            let img = new Image();
-            let src = `icons/icon${i}.${ext}`;
+            let img = new Image(); let src = `icons/icon${i}.${ext}`;
             img.onload = () => {
-                let opt = document.createElement('option');
-                opt.value = src; opt.textContent = `icon${i}.${ext}`;
-                let options = Array.from(iconSelect.options);
-                options.push(opt);
+                let opt = document.createElement('option'); opt.value = src; opt.textContent = `icon${i}.${ext}`;
+                let options = Array.from(iconSelect.options); options.push(opt);
                 options.sort((a, b) => (a.value === "" ? -1 : b.value === "" ? 1 : a.text.localeCompare(b.text, undefined, {numeric: true})));
                 iconSelect.innerHTML = ""; options.forEach(o => iconSelect.appendChild(o));
             };
@@ -714,158 +952,98 @@
         });
     }
 
-    // --- UI Frissítés Változásokkor ---
-    document.getElementById('format').addEventListener('change', updateUI);
-    document.getElementById('direction').addEventListener('change', updateUI);
-
+    // --- KÓDOLÓ UI FRISSÍTÉS ---
     function updateUI() {
+        if(currentTab !== 'encode') return;
         const format = document.getElementById('format').value;
         const direction = document.getElementById('direction').value;
         const scanMode = document.getElementById('scanModeSelect').value;
         
-        updateColors(format);
+        updateColors();
+        document.getElementById('qrIconContainer').classList.add('hidden');
+        document.getElementById('fileInputContainer').classList.add('hidden');
+        document.getElementById('cameraContainer').classList.add('hidden');
+        document.getElementById('scanModeToggle').classList.add('hidden');
+        document.getElementById('textInputContainer').classList.remove('hidden');
 
-        const qrIconContainer = document.getElementById('qrIconContainer');
-        const fileInputContainer = document.getElementById('fileInputContainer');
-        const cameraContainer = document.getElementById('cameraContainer');
-        const textInputContainer = document.getElementById('textInputContainer');
-        const scanModeToggle = document.getElementById('scanModeToggle');
-        const clearBtn = document.getElementById('clearBtn');
-        
-        const inputLabel = document.getElementById('inputLabel');
-        const title = document.getElementById('mainTitle');
-        const btn = document.getElementById('actionBtn');
+        if(direction === 'encode') document.getElementById('clearBtn').style.display = 'block';
+        else document.getElementById('clearBtn').style.display = 'none';
 
-        qrIconContainer.classList.add('hidden');
-        fileInputContainer.classList.add('hidden');
-        cameraContainer.classList.add('hidden');
-        scanModeToggle.classList.add('hidden');
-        textInputContainer.classList.remove('hidden');
+        if (!(format === 'barcode' && direction === 'decode' && scanMode === 'camera')) ensureCameraStopped();
 
-        if(direction === 'encode') {
-            clearBtn.style.display = 'block';
-        } else {
-            clearBtn.style.display = 'none';
-        }
-
-        if (!(format === 'barcode' && direction === 'decode' && scanMode === 'camera')) {
-            ensureCameraStopped();
-        }
-
-        if (format === 'secret') {
-            title.innerText = "Titkosított JS Kódoló";
-        } else {
-            title.innerText = "Kódoló / Dekódoló";
-        }
+        let title = document.getElementById('mainTitle');
+        let inputLabel = document.getElementById('inputLabel');
+        let btn = document.getElementById('actionBtn');
+        title.innerText = format === 'secret' ? "Titkosított JS Kódoló" : "Kódoló / Dekódoló";
 
         if (direction === 'encode') {
             inputLabel.innerText = "Szöveg vagy kód megadása:";
-            if (format === 'qr') qrIconContainer.classList.remove('hidden');
+            if (format === 'qr') document.getElementById('qrIconContainer').classList.remove('hidden');
             btn.innerText = "Átalakítás";
         } else {
             btn.innerText = "Átalakítás";
-            
             if (format === 'qr') {
-                textInputContainer.classList.add('hidden');
-                fileInputContainer.classList.remove('hidden');
+                document.getElementById('textInputContainer').classList.add('hidden');
+                document.getElementById('fileInputContainer').classList.remove('hidden');
                 document.getElementById('imageUpload').previousElementSibling.innerText = "Tölts fel egy QR kódot tartalmazó képet:";
             } else if (format === 'barcode') {
-                scanModeToggle.classList.remove('hidden');
-                textInputContainer.classList.add('hidden');
-                
+                document.getElementById('scanModeToggle').classList.remove('hidden');
+                document.getElementById('textInputContainer').classList.add('hidden');
                 if(scanMode === 'camera') {
-                    cameraContainer.classList.remove('hidden');
+                    document.getElementById('cameraContainer').classList.remove('hidden');
                     btn.innerText = "Kamera Indítása";
-                    checkCameraPermissionsAndPopulate(false);
-                    if(document.getElementById('cameraSelect').options.length === 0) {
-                        document.getElementById('cameraSelect').innerHTML = '<option value="">(Engedélyezés után frissül...)</option>';
-                    }
+                    checkCameraPermissions((devs) => populateSelect('cameraSelect', devs));
                 } else {
-                    fileInputContainer.classList.remove('hidden');
+                    document.getElementById('fileInputContainer').classList.remove('hidden');
                     document.getElementById('imageUpload').previousElementSibling.innerText = "Tölts fel egy Vonalkódot tartalmazó képet:";
                 }
-            } else if (format === 'morse') {
-                inputLabel.innerText = "Morze kód (szóközzel elválasztva):";
-            } else if (format === 'binary') {
-                inputLabel.innerText = "Bináris kód (szóközzel elválasztva):";
-            } else if (format === 'hex') {
-                inputLabel.innerText = "Hexadecimális kód (szóközzel elválasztva):";
-            } else if (format === 'base64') {
-                inputLabel.innerText = "Base64 kód beillesztése:";
-            } else if (format === 'url') {
-                inputLabel.innerText = "URL kódolt szöveg beillesztése:";
-            } else if (format === 'secret') {
-                inputLabel.innerText = "AI Védett titkosított kód beillesztése:";
-            }
+            } else if (format === 'morse') inputLabel.innerText = "Morze kód (szóközzel elválasztva):";
+            else if (format === 'binary') inputLabel.innerText = "Bináris kód (szóközzel elválasztva):";
+            else if (format === 'hex') inputLabel.innerText = "Hexadecimális kód (szóközzel elválasztva):";
+            else if (format === 'base64') inputLabel.innerText = "Base64 kód beillesztése:";
+            else if (format === 'url') inputLabel.innerText = "URL kódolt szöveg beillesztése:";
+            else if (format === 'secret') inputLabel.innerText = "AI Védett titkosított kód beillesztése:";
         }
     }
-    updateUI();
 
-    // --- Feldolgozó Logika ---
+    // --- FŐ KÓDOLÓ FELDOLGOZÁS ---
     function process() {
         const format = document.getElementById('format').value;
         const direction = document.getElementById('direction').value;
         const scanMode = document.getElementById('scanModeSelect').value;
         const inputStr = document.getElementById('inputText').value;
-        
         const textOut = document.getElementById('textOutput');
         const qrOut = document.getElementById('qrCodeOutput');
         const barcodeOut = document.getElementById('barcodeOutput');
         const copyBtn = document.getElementById('copyBtn');
         
         if (format === 'barcode' && direction === 'decode' && scanMode === 'camera') {
-            startBarcodeScanner();
-            return; 
+            startScanner('encode'); return; 
         }
         
         clearOutputs();
-
         if (direction === 'encode') {
             if(!inputStr) return showError("Nincs bemeneti szöveg.");
-
             if (format === 'qr') {
-                qrOut.style.display = 'flex';
-                copyBtn.style.display = 'block';
+                qrOut.style.display = 'flex'; copyBtn.style.display = 'block';
                 let iconSrc = document.getElementById('qrIcon').value;
                 let options = { text: inputStr, width: 256, height: 256, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H };
-                if(iconSrc) {
-                    options.logo = iconSrc; options.logoWidth = 60; options.logoHeight = 60; options.logoBackgroundColor = '#ffffff';
-                }
+                if(iconSrc) { options.logo = iconSrc; options.logoWidth = 60; options.logoHeight = 60; options.logoBackgroundColor = '#ffffff'; }
                 new QRCode(qrOut, options);
             } 
             else if (format === 'barcode') {
                 try { 
                     let safeStr = inputStr.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    if(safeStr.trim() === "") throw new Error("Üres vonalkód");
+                    if(safeStr.trim() === "") throw new Error();
                     JsBarcode(barcodeOut, safeStr, { format: "CODE128", width: 2, height: 100, displayValue: true }); 
                     barcodeOut.style.display = 'block'; copyBtn.style.display = 'block';
                 } catch(e) { showError("Érvénytelen vonalkód karakterek!"); }
             } 
-            else if (format === 'morse') {
-                textOut.style.display = 'block';
-                textOut.innerText = inputStr.toUpperCase().split('').map(char => window.morseMap[char] || char).join(' ');
-                copyBtn.style.display = 'block';
-            } 
-            else if (format === 'binary') {
-                textOut.style.display = 'block';
-                textOut.innerText = Array.from(new TextEncoder().encode(inputStr)).map(b => b.toString(2).padStart(8, '0')).join(' ');
-                copyBtn.style.display = 'block';
-            }
-            else if (format === 'hex') {
-                textOut.style.display = 'block';
-                textOut.innerText = Array.from(new TextEncoder().encode(inputStr)).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
-                copyBtn.style.display = 'block';
-            }
-            else if (format === 'base64') {
-                textOut.style.display = 'block';
-                textOut.innerText = btoa(unescape(encodeURIComponent(inputStr)));
-                copyBtn.style.display = 'block';
-            }
-            else if (format === 'url') {
-                textOut.style.display = 'block';
-                textOut.innerText = encodeURIComponent(inputStr);
-                copyBtn.style.display = 'block';
-            }
+            else if (format === 'morse') { textOut.style.display = 'block'; textOut.innerText = inputStr.toUpperCase().split('').map(char => window.morseMap[char] || char).join(' '); copyBtn.style.display = 'block'; }
+            else if (format === 'binary') { textOut.style.display = 'block'; textOut.innerText = Array.from(new TextEncoder().encode(inputStr)).map(b => b.toString(2).padStart(8, '0')).join(' '); copyBtn.style.display = 'block'; }
+            else if (format === 'hex') { textOut.style.display = 'block'; textOut.innerText = Array.from(new TextEncoder().encode(inputStr)).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' '); copyBtn.style.display = 'block'; }
+            else if (format === 'base64') { textOut.style.display = 'block'; textOut.innerText = btoa(unescape(encodeURIComponent(inputStr))); copyBtn.style.display = 'block'; }
+            else if (format === 'url') { textOut.style.display = 'block'; textOut.innerText = encodeURIComponent(inputStr); copyBtn.style.display = 'block'; }
             else if (format === 'secret') {
                 textOut.style.display = 'block';
                 const tokens = inputStr.match(/(\b\w+\b|===|!==|==|!=|=>|<=|>=|&&|\|\||\s|[^\w\s])/g) || [];
@@ -876,97 +1054,280 @@
                     else {
                         for(let i=0; i<token.length; i++) {
                             let charIdx = window.secretDict.indexOf(token[i]);
-                            if (charIdx !== -1) numbers.push(charIdx);
-                            else numbers.push(token.charCodeAt(i) + 1000); 
+                            if (charIdx !== -1) numbers.push(charIdx); else numbers.push(token.charCodeAt(i) + 1000); 
                         }
                     }
                 });
-                let encodedStr = '';
-                let previousVal = 42; 
-                numbers.forEach((num, i) => {
-                    let shift = (i * 17 + previousVal) % 1024;
-                    let finalCode = 0x4E00 + num + shift; 
-                    encodedStr += String.fromCharCode(finalCode);
-                    previousVal = finalCode % 1000;
-                });
-                textOut.innerText = encodedStr;
-                copyBtn.style.display = 'block';
+                let encodedStr = ''; let previousVal = 42; 
+                numbers.forEach((num, i) => { let shift = (i * 17 + previousVal) % 1024; let finalCode = 0x4E00 + num + shift; encodedStr += String.fromCharCode(finalCode); previousVal = finalCode % 1000; });
+                textOut.innerText = encodedStr; copyBtn.style.display = 'block';
             }
-
         } else {
-            // DEKÓDOLÁS FÁJLBÓL (QR vagy Vonalkód)
             if (format === 'qr' || (format === 'barcode' && scanMode === 'file')) {
                 const fileInput = document.getElementById('imageUpload');
                 if(!fileInput.files.length) return showError("Tölts fel egy képet!"); 
                 textOut.style.display = 'block'; textOut.innerText = "Feldolgozás...";
-                
-                const html5QrCodeFile = new Html5Qrcode("qrCodeOutput");
-                html5QrCodeFile.scanFile(fileInput.files[0], true)
+                new Html5Qrcode("qrCodeOutput").scanFile(fileInput.files[0], true)
                 .then(text => { textOut.innerText = text; copyBtn.style.display = 'block'; })
                 .catch(() => showError("Nem sikerült kiolvasni a kódot a képből."));
             } 
             else {
                 if(!inputStr) return showError("Nincs bemeneti szöveg.");
-                
-                if (format === 'morse') {
-                    textOut.style.display = 'block';
-                    textOut.innerText = inputStr.trim().split(' ').map(code => window.reverseMorseMap[code] || code).join('').replace(/\//g, ' ');
-                    copyBtn.style.display = 'block';
-                } 
-                else if (format === 'binary') {
-                    try { 
-                        textOut.style.display = 'block';
-                        let bytes = inputStr.trim().split(/\s+/).map(bin => parseInt(bin, 2));
-                        textOut.innerText = new TextDecoder().decode(new Uint8Array(bytes)); 
-                        copyBtn.style.display = 'block';
-                    } catch(e) { showError("Érvénytelen bináris kód formátum!"); }
-                }
-                else if (format === 'hex') {
-                    try {
-                        textOut.style.display = 'block';
-                        let bytes = inputStr.trim().split(/\s+/).map(hex => parseInt(hex, 16));
-                        textOut.innerText = new TextDecoder().decode(new Uint8Array(bytes)); 
-                        copyBtn.style.display = 'block';
-                    } catch(e) { showError("Érvénytelen Hexadecimális formátum!"); }
-                }
-                else if (format === 'base64') {
-                    try {
-                        textOut.style.display = 'block';
-                        textOut.innerText = decodeURIComponent(escape(atob(inputStr.trim())));
-                        copyBtn.style.display = 'block';
-                    } catch(e) { showError("Érvénytelen Base64 formátum!"); }
-                }
-                else if (format === 'url') {
-                    try {
-                        textOut.style.display = 'block';
-                        textOut.innerText = decodeURIComponent(inputStr.trim());
-                        copyBtn.style.display = 'block';
-                    } catch(e) { showError("Érvénytelen URL kódolás!"); }
-                }
+                if (format === 'morse') { textOut.style.display = 'block'; textOut.innerText = inputStr.trim().split(' ').map(code => window.reverseMorseMap[code] || code).join('').replace(/\//g, ' '); copyBtn.style.display = 'block'; }
+                else if (format === 'binary') { try { textOut.style.display = 'block'; let bytes = inputStr.trim().split(/\s+/).map(bin => parseInt(bin, 2)); textOut.innerText = new TextDecoder().decode(new Uint8Array(bytes)); copyBtn.style.display = 'block'; } catch(e) { showError("Érvénytelen bináris kód formátum!"); } }
+                else if (format === 'hex') { try { textOut.style.display = 'block'; let bytes = inputStr.trim().split(/\s+/).map(hex => parseInt(hex, 16)); textOut.innerText = new TextDecoder().decode(new Uint8Array(bytes)); copyBtn.style.display = 'block'; } catch(e) { showError("Érvénytelen Hexadecimális formátum!"); } }
+                else if (format === 'base64') { try { textOut.style.display = 'block'; textOut.innerText = decodeURIComponent(escape(atob(inputStr.trim()))); copyBtn.style.display = 'block'; } catch(e) { showError("Érvénytelen Base64 formátum!"); } }
+                else if (format === 'url') { try { textOut.style.display = 'block'; textOut.innerText = decodeURIComponent(inputStr.trim()); copyBtn.style.display = 'block'; } catch(e) { showError("Érvénytelen URL kódolás!"); } }
                 else if (format === 'secret') {
-                    textOut.style.display = 'block';
-                    let decodedStr = '';
-                    let previousVal = 42; 
-                    let safeStr = inputStr.trim(); 
+                    textOut.style.display = 'block'; let decodedStr = ''; let previousVal = 42; let safeStr = inputStr.trim(); 
                     try {
                         for(let i=0; i<safeStr.length; i++) {
-                            let finalCode = safeStr.charCodeAt(i);
-                            let shift = (i * 17 + previousVal) % 1024;
-                            let num = finalCode - 0x4E00 - shift;
-                            previousVal = finalCode % 1000;
-                            if (num >= 0 && num < 1000) decodedStr += window.secretDict[num];
-                            else if (num >= 1000) decodedStr += String.fromCharCode(num - 1000);
-                            else throw new Error("Hibás karakter!");
+                            let finalCode = safeStr.charCodeAt(i); let shift = (i * 17 + previousVal) % 1024; let num = finalCode - 0x4E00 - shift; previousVal = finalCode % 1000;
+                            if (num >= 0 && num < 1000) decodedStr += window.secretDict[num]; else if (num >= 1000) decodedStr += String.fromCharCode(num - 1000); else throw new Error();
                         }
-                        textOut.innerText = decodedStr;
-                        copyBtn.style.display = 'block';
-                    } catch(e) {
-                        showError("Érvénytelen vagy sérült titkosított kód!");
-                    }
+                        textOut.innerText = decodedStr; copyBtn.style.display = 'block';
+                    } catch(e) { showError("Érvénytelen vagy sérült titkosított kód!"); }
                 }
             }
         }
     }
+
+    // ==============================================
+    // 3. LELTÁR / LISTÁK RENDSZERE
+    // ==============================================
+    let myInventory = []; // Array of list objects
+    let activeListId = null;
+
+    function loadInventory() {
+        let saved = localStorage.getItem('bezzegInventory');
+        if (saved) {
+            try { myInventory = JSON.parse(saved); } catch(e) { myInventory = []; }
+        }
+    }
+
+    function saveInventory() {
+        localStorage.setItem('bezzegInventory', JSON.stringify(myInventory));
+    }
+
+    function createNewList() {
+        let name = document.getElementById('newListName').value.trim();
+        let loc = document.getElementById('newListLoc').value.trim();
+        
+        // Ellenőrzés: csak betűk és számok, szóköz
+        if (!/^[a-zA-Z0-9áéíóöőúüűÁÉÍÓÖŐÚÜŰ\s]+$/.test(name)) {
+            alert("A lista neve csak betűket és számokat tartalmazhat!");
+            return;
+        }
+
+        let id = Math.random().toString(36).substring(2, 12).toUpperCase(); // 10 karakteres ID
+        let newList = {
+            id: id,
+            name: name,
+            location: loc,
+            rating: 0,
+            readOnly: false,
+            items: []
+        };
+        
+        myInventory.push(newList);
+        saveInventory();
+        document.getElementById('newListModal').style.display = 'none';
+        document.getElementById('newListName').value = '';
+        document.getElementById('newListLoc').value = '';
+        
+        renderListDropdown();
+        document.getElementById('invListSelector').value = id;
+        renderCurrentList();
+    }
+
+    function renderListDropdown() {
+        const selector = document.getElementById('invListSelector');
+        const currentVal = selector.value;
+        selector.innerHTML = '<option value="">-- Válassz listát --</option>';
+        
+        myInventory.forEach(list => {
+            let opt = document.createElement('option');
+            opt.value = list.id;
+            opt.text = list.name + (list.readOnly ? " (Importált)" : "");
+            selector.appendChild(opt);
+        });
+        
+        if (currentVal && myInventory.some(l => l.id === currentVal)) {
+            selector.value = currentVal;
+        }
+    }
+
+    function getActiveList() {
+        let id = document.getElementById('invListSelector').value;
+        return myInventory.find(l => l.id === id);
+    }
+
+    function renderCurrentList() {
+        let list = getActiveList();
+        const area = document.getElementById('invContentArea');
+        if (!list) {
+            area.classList.add('hidden');
+            activeListId = null;
+            return;
+        }
+        
+        activeListId = list.id;
+        area.classList.remove('hidden');
+        document.getElementById('invViewName').innerText = list.name;
+        document.getElementById('invViewId').innerText = list.id;
+        document.getElementById('invViewLoc').innerText = list.location ? `Helyszín: ${list.location}` : "";
+        
+        if (list.readOnly) {
+            document.getElementById('invViewReadOnly').classList.remove('hidden');
+            document.getElementById('invAddBtn').disabled = true;
+            document.getElementById('invAddBtn').title = "Csak az alkotója módosíthatja!";
+        } else {
+            document.getElementById('invViewReadOnly').classList.add('hidden');
+            document.getElementById('invAddBtn').disabled = false;
+            document.getElementById('invAddBtn').title = "";
+        }
+        
+        updateStarsUI(list.rating);
+        renderItems(list);
+    }
+
+    function updateStarsUI(rating) {
+        let stars = document.getElementById('invViewStars').children;
+        for (let i = 0; i < 5; i++) {
+            if (i < rating) stars[i].classList.add('active');
+            else stars[i].classList.remove('active');
+        }
+    }
+
+    function rateList(rating) {
+        let list = getActiveList();
+        if (list) {
+            list.rating = rating;
+            saveInventory();
+            updateStarsUI(rating);
+        }
+    }
+
+    function renderItems(list) {
+        const container = document.getElementById('invItemsList');
+        container.innerHTML = "";
+        document.getElementById('invItemCount').innerText = list.items.length;
+        
+        list.items.forEach(item => {
+            let div = document.createElement('div');
+            div.className = 'list-item';
+            
+            let btnHtml = list.readOnly ? '' : `<button class="del-item-btn" onclick="askConfirm('deleteListItem', '${item.id}')" title="Törlés">➖</button>`;
+            
+            div.innerHTML = `
+                <div class="list-item-info">
+                    <strong>${item.name}</strong>
+                    <small>${item.desc}</small>
+                </div>
+                <div style="display:flex; align-items:center;">
+                    <span class="list-item-id">ID: ${item.id}</span>
+                    ${btnHtml}
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function addItemToList() {
+        let list = getActiveList();
+        if (!list || list.readOnly) return;
+        
+        let id = document.getElementById('newItemId').value.trim();
+        let name = document.getElementById('newItemName').value.trim();
+        let desc = document.getElementById('newItemDesc').value.trim();
+        
+        if (!id || !name) {
+            alert("Az azonosító (ID) és a Név megadása kötelező!");
+            return;
+        }
+        if (list.items.some(i => i.id === id)) {
+            alert("Ez az ID már szerepel a listában!");
+            return;
+        }
+        
+        list.items.push({ id: id, name: name, desc: desc });
+        saveInventory();
+        renderItems(list);
+        
+        document.getElementById('addItemModal').style.display = 'none';
+        document.getElementById('newItemId').value = '';
+        document.getElementById('newItemName').value = '';
+        document.getElementById('newItemDesc').value = '';
+    }
+
+    function deleteItemLogic(itemId) {
+        let list = getActiveList();
+        if (!list || list.readOnly) return;
+        list.items = list.items.filter(i => i.id !== itemId);
+        saveInventory();
+        renderItems(list);
+    }
+
+    function processSmartScan(scannedId) {
+        let list = getActiveList();
+        if (!list) return;
+        
+        let item = list.items.find(i => i.id === scannedId);
+        let resModal = document.getElementById('smartScanResultModal');
+        
+        if (item) {
+            document.getElementById('smartResName').innerText = item.name;
+            document.getElementById('smartResName').style.color = 'var(--accent)';
+            document.getElementById('smartResDesc').innerText = item.desc;
+            document.getElementById('smartResId').innerText = "ID: " + item.id;
+        } else {
+            document.getElementById('smartResName').innerText = "Ismeretlen Kód";
+            document.getElementById('smartResName').style.color = '#f44336';
+            document.getElementById('smartResDesc').innerText = "Ez az elem nincs a listában.";
+            document.getElementById('smartResId').innerText = "ID: " + scannedId;
+        }
+        resModal.style.display = 'flex';
+    }
+
+    function shareList() {
+        let list = getActiveList();
+        if (!list) return;
+        // Csak a struktúrát adjuk át, readOnly flaget beállítjuk majd importnál
+        let exportObj = { id: list.id, name: list.name, location: list.location, items: list.items };
+        let base64str = btoa(encodeURIComponent(JSON.stringify(exportObj)));
+        
+        // Másolás kérése
+        prompt("Másold ki ezt a kódot a megosztáshoz (Ctrl+C / Másolás):", base64str);
+    }
+
+    function importList() {
+        let code = document.getElementById('importCodeArea').value.trim();
+        if (!code) return;
+        try {
+            let listObj = JSON.parse(decodeURIComponent(atob(code)));
+            if (!listObj.id || !listObj.name || !Array.isArray(listObj.items)) throw new Error("Hibás struktúra");
+            
+            // Ha már van ilyen ID, felülírjuk
+            myInventory = myInventory.filter(l => l.id !== listObj.id);
+            
+            listObj.readOnly = true; // Idegen lista
+            listObj.rating = 0;
+            myInventory.push(listObj);
+            saveInventory();
+            
+            document.getElementById('importListModal').style.display = 'none';
+            document.getElementById('importCodeArea').value = '';
+            
+            renderListDropdown();
+            document.getElementById('invListSelector').value = listObj.id;
+            renderCurrentList();
+            alert("A lista sikeresen importálva: " + listObj.name);
+            
+        } catch(e) {
+            alert("Érvénytelen vagy sérült megosztási kód!");
+        }
+    }
+
 </script>
 </body>
 </html>
