@@ -145,6 +145,7 @@
             background-color: var(--accent); color: white; font-size: 18px; font-weight: bold;
             cursor: pointer; transition: background-color 0.5s, filter 0.3s; margin-top: 10px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            flex: 1; /* Hogy egyforma szélesek legyenek a gombok egy sorban */
         }
         .main-btn:hover:not(:disabled) { filter: brightness(1.2); }
         .main-btn:disabled { background-color: #555; cursor: not-allowed; color: #888; text-shadow: none; }
@@ -237,7 +238,7 @@
         .del-item-btn { background: none; border: none; color: #f44336; font-size: 20px; cursor: pointer; }
         .del-item-btn:hover { transform: scale(1.2); }
         
-        .inventory-controls { display: flex; gap: 10px; margin-bottom: 20px; }
+        .inventory-controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         .smart-scan-result { font-size: 24px; color: var(--accent); font-weight: bold; text-align: center; margin: 20px 0; }
         .smart-scan-desc { font-size: 18px; color: #fff; text-align: center; }
 
@@ -382,6 +383,8 @@
             <button class="main-btn success-btn" id="invAddBtn" onclick="document.getElementById('addItemModal').style.display='flex'">➕ Új Tétel</button>
             <button class="main-btn" onclick="startScanner('smart')" style="background:#9C27B0;">📷 Okos Szkenner</button>
             <button class="main-btn" onclick="shareList()" style="background:#00BCD4;">📤 Megosztás</button>
+            <!-- Új gomb a lista törléséhez -->
+            <button class="main-btn danger-btn" onclick="askConfirm('deleteList')">🗑️ Lista Törlése</button>
         </div>
 
         <h4 style="border-bottom: 1px solid #333; padding-bottom: 5px;">Tételek (<span id="invItemCount">0</span>)</h4>
@@ -632,6 +635,8 @@
             clearOutputs();
         } else if (confirmAction === 'deleteListItem') {
             deleteItemLogic(confirmParam);
+        } else if (confirmAction === 'deleteList') {
+            deleteListLogic();
         }
         closeConfirm();
     }
@@ -677,7 +682,6 @@
     let isCameraScanning = false;
     let cameraPermissionGranted = false;
     let currentScanContext = null; // 'encode', 'add_item', 'smart'
-    let modalScanner = null;
 
     function triggerFocus(event) {
         if (!isCameraScanning) return;
@@ -842,7 +846,7 @@
 
     function scanFileForAdd(inputObj) {
         if(!inputObj.files.length) return;
-        const html5QrCodeFile = new Html5Qrcode("modalReader"); // temporary div just to read
+        const html5QrCodeFile = new Html5Qrcode("modalReader"); 
         html5QrCodeFile.scanFile(inputObj.files[0], true)
         .then(text => { document.getElementById('newItemId').value = text; inputObj.value = ""; })
         .catch(() => { alert("Nem sikerült kiolvasni a kódot a képből."); inputObj.value = ""; });
@@ -860,7 +864,7 @@
         }
     }
 
-    // --- HÁTTÉRKEZELŐ --- (változatlan a korábbiból)
+    // --- HÁTTÉRKEZELŐ ---
     const bgLayers = [document.getElementById('bg-layer-1'), document.getElementById('bg-layer-2')];
     let currentLayerIdx = 0; let validBackgrounds = []; let bgTimer = null; let currentBgSeqIndex = 0;
     function loadBgSettings() {
@@ -1095,7 +1099,7 @@
     // ==============================================
     // 3. LELTÁR / LISTÁK RENDSZERE
     // ==============================================
-    let myInventory = []; // Array of list objects
+    let myInventory = []; 
     let activeListId = null;
 
     function loadInventory() {
@@ -1113,13 +1117,12 @@
         let name = document.getElementById('newListName').value.trim();
         let loc = document.getElementById('newListLoc').value.trim();
         
-        // Ellenőrzés: csak betűk és számok, szóköz
         if (!/^[a-zA-Z0-9áéíóöőúüűÁÉÍÓÖŐÚÜŰ\s]+$/.test(name)) {
             alert("A lista neve csak betűket és számokat tartalmazhat!");
             return;
         }
 
-        let id = Math.random().toString(36).substring(2, 12).toUpperCase(); // 10 karakteres ID
+        let id = Math.random().toString(36).substring(2, 12).toUpperCase(); 
         let newList = {
             id: id,
             name: name,
@@ -1267,6 +1270,16 @@
         saveInventory();
         renderItems(list);
     }
+    
+    // --- Lista teljes törlése logika ---
+    function deleteListLogic() {
+        if (!activeListId) return;
+        myInventory = myInventory.filter(l => l.id !== activeListId);
+        saveInventory();
+        renderListDropdown();
+        document.getElementById('invListSelector').value = "";
+        renderCurrentList();
+    }
 
     function processSmartScan(scannedId) {
         let list = getActiveList();
@@ -1292,11 +1305,9 @@
     function shareList() {
         let list = getActiveList();
         if (!list) return;
-        // Csak a struktúrát adjuk át, readOnly flaget beállítjuk majd importnál
         let exportObj = { id: list.id, name: list.name, location: list.location, items: list.items };
         let base64str = btoa(encodeURIComponent(JSON.stringify(exportObj)));
         
-        // Másolás kérése
         prompt("Másold ki ezt a kódot a megosztáshoz (Ctrl+C / Másolás):", base64str);
     }
 
@@ -1307,10 +1318,9 @@
             let listObj = JSON.parse(decodeURIComponent(atob(code)));
             if (!listObj.id || !listObj.name || !Array.isArray(listObj.items)) throw new Error("Hibás struktúra");
             
-            // Ha már van ilyen ID, felülírjuk
             myInventory = myInventory.filter(l => l.id !== listObj.id);
             
-            listObj.readOnly = true; // Idegen lista
+            listObj.readOnly = true; 
             listObj.rating = 0;
             myInventory.push(listObj);
             saveInventory();
