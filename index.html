@@ -1037,7 +1037,7 @@
             } 
             else if (format === 'barcode') {
                 try { 
-                    let safeStr = inputStr.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    let safeStr = inputStr.normalize("NFD").replace(/[̀-ͯ]/g, "");
                     if(safeStr.trim() === "") throw new Error();
                     JsBarcode(barcodeOut, safeStr, { format: "CODE128", width: 2, height: 100, displayValue: true }); 
                     barcodeOut.style.display = 'block'; copyBtn.style.display = 'block';
@@ -1050,7 +1050,7 @@
             else if (format === 'url') { textOut.style.display = 'block'; textOut.innerText = encodeURIComponent(inputStr); copyBtn.style.display = 'block'; }
             else if (format === 'secret') {
                 textOut.style.display = 'block';
-                const tokens = inputStr.match(/(\b\w+\b|===|!==|==|!=|=>|<=|>=|&&|\|\||\s|[^\w\s])/g) || [];
+                const tokens = inputStr.match(/(\w+|===|!==|==|!=|=>|<=|>=|&&|\|\||\s|[^\w\s])/g) || [];
                 let numbers = [];
                 tokens.forEach(token => {
                     let idx = window.secretDict.indexOf(token);
@@ -1308,7 +1308,11 @@
         let exportObj = { id: list.id, name: list.name, location: list.location, items: list.items };
         let base64str = btoa(encodeURIComponent(JSON.stringify(exportObj)));
         
-        prompt("Másold ki ezt a kódot a megosztáshoz (Ctrl+C / Másolás):", base64str);
+        navigator.clipboard.writeText(base64str).then(() => {
+            alert("✅ A lista kódja sikeresen a vágólapra másolva!\nMost már beillesztheted (Ctrl+V) bárhová.");
+        }).catch(() => {
+            alert("❌ Hiba történt: A böngésződ nem engedélyezi az automatikus vágólapra másolást.");
+        });
     }
 
     function importList() {
